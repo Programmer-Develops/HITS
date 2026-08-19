@@ -1,2 +1,2 @@
 # HITS
-HITS( Hostel Issue Tracking System )
+HITS (Hygiene Issue and Tracking System)
