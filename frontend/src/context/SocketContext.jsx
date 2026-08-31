@@ -9,7 +9,7 @@ export const SocketProvider = ({ children }) => {
     on: () => {},
     off: () => {},
     emit: () => {},
-    connected: false
+    connected: true  // Always "online" — we use REST API polling instead of WebSockets
   };
 
   return (
