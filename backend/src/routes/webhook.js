@@ -28,19 +28,22 @@ router.get('/', (req, res) => {
 
 // POST /webhook — Incoming WhatsApp messages from Meta
 router.post('/', async (req, res) => {
-  // Always respond 200 immediately so Meta doesn't retry
-  res.sendStatus(200);
-
   try {
     const body = req.body;
-    if (body.object !== 'whatsapp_business_account') return;
+
+    // Ignore non-WhatsApp payloads
+    if (body.object !== 'whatsapp_business_account') {
+      return res.sendStatus(200);
+    }
 
     const changes = body.entry?.[0]?.changes?.[0]?.value;
-    if (!changes?.messages?.[0]) return;
+    if (!changes?.messages?.[0]) {
+      return res.sendStatus(200);
+    }
 
     const message = changes.messages[0];
-    const senderPhone = message.from; // e.g. "919876543210"
-    const messageType = message.type; // "image", "text", etc.
+    const senderPhone = message.from;
+    const messageType = message.type;
 
     console.log(`📩 Message from ${senderPhone}, type: ${messageType}`);
 
@@ -50,14 +53,14 @@ router.post('/', async (req, res) => {
     if (!worker) {
       console.log(`🚫 Unregistered number: ${senderPhone}`);
       await sendHindiReply(senderPhone, buildUnauthorizedMessage());
-      return;
+      return res.sendStatus(200);
     }
 
     // Only process image messages
     if (messageType !== 'image') {
-      console.log(`📝 Non-photo message from ${worker.name} — ignoring`);
+      console.log(`📝 Non-photo message from ${worker.name}`);
       await sendHindiReply(senderPhone, buildPhotoRequiredMessage());
-      return;
+      return res.sendStatus(200);
     }
 
     // Process the photo
@@ -66,9 +69,9 @@ router.post('/', async (req, res) => {
 
     // Get IST time
     const now = new Date();
-    const timeIST = now.toLocaleString('en-IN', { 
+    const timeIST = now.toLocaleString('en-IN', {
       timeZone: 'Asia/Kolkata',
-      hour: '2-digit', 
+      hour: '2-digit',
       minute: '2-digit',
       day: '2-digit',
       month: 'short',
@@ -112,15 +115,20 @@ router.post('/', async (req, res) => {
 
     // Send Hindi confirmation to worker
     await sendHindiReply(
-      senderPhone, 
+      senderPhone,
       buildConfirmationMessage(worker.nameHindi || worker.name, blockNameHindi, timeIST)
     );
 
     console.log(`✅ Report saved & reply sent for ${worker.name} — Block: ${blockName}`);
 
+    // Send 200 LAST — this keeps Vercel function alive for all the above work
+    return res.sendStatus(200);
+
   } catch (err) {
     console.error('❌ Webhook processing error:', err.message);
     console.error('Stack:', err.stack);
+    // Always return 200 to Meta to prevent endless retries
+    return res.sendStatus(200);
   }
 });
 
