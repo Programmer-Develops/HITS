@@ -6,8 +6,7 @@
     },
     "backend": {
       "root": "backend",
-      "entrypoint": "api/index.js",
-      "maxDuration": 30
+      "entrypoint": "api/index.js"
     }
   },
   "rewrites": [
