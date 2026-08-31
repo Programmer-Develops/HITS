@@ -28,13 +28,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/hits_sanitation')
-  .then(() => {
-    console.log('✅ MongoDB connected');
-  })
-  .catch(err => {
-    console.error('❌ MongoDB connection failed:', err.message);
-  });
+// MongoDB connection is handled exclusively by api/index.js (Vercel entrypoint)
+// This prevents double-connect race conditions on cold starts
 
 module.exports = { app };
