@@ -7,13 +7,12 @@ const API = import.meta.env.VITE_BACKEND_URL || '';
 
 export default function Dashboard() {
   const { t, lang } = useLanguage();
-  const { socket } = useSocket();
+  const socket = useSocket();
   const [blocks, setBlocks] = useState([]);
   const [stats, setStats] = useState({ todayCount: 0, totalCount: 0, activeWorkers: 0 });
   const [feed, setFeed] = useState([]);
   const [modalPhoto, setModalPhoto] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [dirtyBlocks, setDirtyBlocks] = useState([]);
 
   const fetchData = async () => {
     try {
@@ -25,8 +24,7 @@ export default function Dashboard() {
       setBlocks(blocksRes.data.blocks || []);
       setStats(statsRes.data);
       setFeed(todayRes.data.reports?.slice(0, 10) || []);
-      setDirtyBlocks((blocksRes.data.blocks || []).filter(b => b.status === 'dirty' || b.status === 'unknown'));
-    } catch (err) {
+    } catch {
       console.log('Backend not connected — showing demo data');
       // Demo data for UI preview
       setBlocks([
