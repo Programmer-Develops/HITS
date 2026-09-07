@@ -1,9 +1,6 @@
 import React from 'react';
-import { useLanguage } from '../context/LanguageContext';
 
 export default function Privacy() {
-  const { lang } = useLanguage();
-
   return (
     <div className="page" style={{ padding: '40px 32px', maxWidth: '800px', margin: '0 auto' }}>
       <div className="page-header" style={{ padding: 0, marginBottom: '24px' }}>
