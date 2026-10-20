@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Report = require('../models/Report');
-const { buildReportFilter } = require('../utils/helpers');
+const Block = require('../models/Block');
+const { isObjectId, buildReportFilter } = require('../utils/helpers');
 
 // GET /api/reports — Get reports (paginated, searchable)
 // Query: ?search=&blockId=&from=YYYY-MM-DD&to=YYYY-MM-DD&page=&limit=
@@ -56,6 +57,48 @@ router.get('/stats', async (req, res) => {
       totalCount,
       latestReport
     });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// PATCH /api/reports/:id — Change the block assigned to a report
+router.patch('/:id', async (req, res) => {
+  try {
+    if (!isObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, error: 'Invalid report id' });
+    }
+    const { blockId } = req.body;
+    if (!isObjectId(blockId)) {
+      return res.status(400).json({ success: false, error: 'Invalid block id' });
+    }
+
+    const block = await Block.findById(blockId);
+    if (!block) {
+      return res.status(404).json({ success: false, error: 'Block not found' });
+    }
+
+    const report = await Report.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: {
+          blockId: block._id,
+          blockName: block.name,
+          blockNameHindi: block.nameHindi || block.name
+        }
+      },
+      { new: true }
+    );
+    if (!report) {
+      return res.status(404).json({ success: false, error: 'Report not found' });
+    }
+
+    block.lastCleaned = report.timestamp || new Date();
+    block.lastCleanedBy = report.workerName;
+    block.status = 'clean';
+    await block.save();
+
+    res.json({ success: true, report });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

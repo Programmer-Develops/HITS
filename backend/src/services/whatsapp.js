@@ -70,22 +70,9 @@ const buildPhotoRequiredMessage = () => {
     `टेक्स्ट संदेश स्वीकार नहीं किए जाते।`;
 };
 
-/**
- * Ask a worker who covers several blocks which one the photo is for.
- * `blocks` must be in the same order that matchBlockFromCaption() will use.
- */
-const buildBlockChoiceMessage = (workerName, blocks) => {
-  const list = blocks.map((b, i) => `${i + 1}. ${b.nameHindi || b.name}`).join('\n');
-  return `📍 ${workerName}, आपको एक से अधिक स्थान सौंपे गए हैं।\n\n` +
-    `यह फ़ोटो किस स्थान की है? कृपया फ़ोटो *दोबारा* भेजें और कैप्शन में स्थान का *नंबर* लिखें:\n\n` +
-    `${list}\n\n` +
-    `उदाहरण: कैप्शन में 2 लिखें।`;
-};
-
 module.exports = { 
   sendHindiReply, 
   buildConfirmationMessage,
   buildUnauthorizedMessage,
-  buildPhotoRequiredMessage,
-  buildBlockChoiceMessage
+  buildPhotoRequiredMessage
 };

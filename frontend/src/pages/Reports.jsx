@@ -97,6 +97,21 @@ export default function Reports() {
 
   const blockLabel = (b) => (lang === 'hi' ? b.nameHindi || b.name : b.name);
 
+  const handleBlockChange = async (reportId, newBlockId) => {
+    if (!newBlockId) return;
+    try {
+      const res = await axios.patch(`${API}/api/reports/${reportId}`, { blockId: newBlockId });
+      const updated = res.data.report;
+      if (updated) {
+        setData(prev => ({
+          ...prev,
+          reports: prev.reports.map(r => (r._id === reportId ? updated : r))
+        }));
+        setModalPhoto(prev => (prev && prev._id === reportId ? updated : prev));
+      }
+    } catch {}
+  };
+
   if (firstLoad) return <div className="page"><div className="loading"><div className="spinner"></div></div></div>;
 
   return (
@@ -169,7 +184,24 @@ export default function Reports() {
                   <div style={{fontWeight:600}}>{lang === 'hi' ? (r.workerNameHindi || r.workerName) : r.workerName}</div>
                   <div style={{fontSize:'12px', color:'var(--text-muted)'}}>+{r.workerPhone}</div>
                 </td>
-                <td style={{color:'var(--text-secondary)'}}>{lang === 'hi' ? r.blockNameHindi : r.blockName}</td>
+                <td style={{color:'var(--text-secondary)'}}>
+                  {blocks.length > 0 ? (
+                    <select
+                      value={r.blockId || ''}
+                      onChange={e => handleBlockChange(r._id, e.target.value)}
+                      style={{width:'auto', minWidth:'180px', padding:'6px 10px', fontSize:'13px'}}
+                    >
+                      {!r.blockId && (
+                        <option value="">{lang === 'hi' ? r.blockNameHindi : r.blockName}</option>
+                      )}
+                      {blocks.map(b => (
+                        <option key={b._id} value={b._id}>{blockLabel(b)}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    lang === 'hi' ? r.blockNameHindi : r.blockName
+                  )}
+                </td>
                 <td style={{fontSize:'13px', color:'var(--text-secondary)'}}>{r.timeIST}</td>
                 <td><span className="status-badge clean">✅ {t.clean}</span></td>
               </tr>

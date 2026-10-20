@@ -4,13 +4,12 @@ const Worker = require('../models/Worker');
 const Block = require('../models/Block');
 const Report = require('../models/Report');
 const { uploadPhotoFromMeta } = require('../services/cloudinary');
-const { getAssignedBlockIds, matchBlockFromCaption } = require('../utils/helpers');
+const { getAssignedBlockIds, matchBlockFromCaption, pickNextBlock } = require('../utils/helpers');
 const { 
   sendHindiReply, 
   buildConfirmationMessage,
   buildUnauthorizedMessage,
-  buildPhotoRequiredMessage,
-  buildBlockChoiceMessage
+  buildPhotoRequiredMessage
 } = require('../services/whatsapp');
 
 // GET /webhook — Meta verification handshake
@@ -81,27 +80,18 @@ router.post('/', async (req, res) => {
     });
 
     // Find the block(s) this worker is responsible for.
-    // Sorted by name: this is the order of the numbered list we send to the worker.
+    // Never prompt the worker on WhatsApp — auto-pick their next uncleaned/oldest block
+    // (or respect the caption if they happened to write a block name/number).
     const blockIds = getAssignedBlockIds(worker);
     const assignedBlocks = blockIds.length
-      ? await Block.find({ _id: { $in: blockIds } }).sort({ name: 1 })
+      ? await Block.find({ _id: { $in: blockIds } })
       : [];
 
     let block = null;
     if (assignedBlocks.length === 1) {
-      // One block: nothing to ask, same as before
       block = assignedBlocks[0];
     } else if (assignedBlocks.length > 1) {
-      // Several blocks: the worker says which one in the photo caption
-      block = matchBlockFromCaption(caption, assignedBlocks);
-      if (!block) {
-        console.log(`❓ ${worker.name} has ${assignedBlocks.length} blocks, caption "${caption}" matched none — asking`);
-        await sendHindiReply(
-          senderPhone,
-          buildBlockChoiceMessage(worker.nameHindi || worker.name, assignedBlocks)
-        );
-        return res.sendStatus(200);
-      }
+      block = matchBlockFromCaption(caption, assignedBlocks) || pickNextBlock(assignedBlocks, blockIds);
     }
 
     const blockName = block?.name || 'Unknown Block';

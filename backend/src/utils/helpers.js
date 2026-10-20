@@ -68,6 +68,33 @@ const matchBlockFromCaption = (caption, blocks) => {
   return null;
 };
 
+// Automatically pick which block a multi-block worker's photo belongs to
+// when no matching caption is given (so the bot never has to ask questions):
+// 1. Keep the worker's assigned block order (blockIds).
+// 2. Prefer the first block that is not 'clean' or has never been cleaned.
+// 3. If all assigned blocks are clean, pick the one cleaned longest ago
+//    (1st photo -> Block 1, 2nd photo -> Block 2, etc.).
+const pickNextBlock = (blocks, blockIds = []) => {
+  if (!Array.isArray(blocks) || blocks.length === 0) return null;
+  if (blocks.length === 1) return blocks[0];
+
+  const orderMap = new Map(blockIds.map((id, idx) => [String(id), idx]));
+  const ordered = [...blocks].sort((a, b) => {
+    const ia = orderMap.get(String(a._id)) ?? 999;
+    const ib = orderMap.get(String(b._id)) ?? 999;
+    return ia - ib;
+  });
+
+  const uncleaned = ordered.find((b) => b.status !== 'clean' || !b.lastCleaned);
+  if (uncleaned) return uncleaned;
+
+  return ordered.reduce((oldest, curr) => {
+    const tOld = new Date(oldest.lastCleaned).getTime() || 0;
+    const tCur = new Date(curr.lastCleaned).getTime() || 0;
+    return tCur < tOld ? curr : oldest;
+  }, ordered[0]);
+};
+
 /* --------------------------------- reports -------------------------------- */
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -134,6 +161,7 @@ module.exports = {
   sanitizeBlockIds,
   getAssignedBlockIds,
   matchBlockFromCaption,
+  pickNextBlock,
   escapeRegex,
   buildReportFilter
 };
