@@ -4,11 +4,13 @@ const Worker = require('../models/Worker');
 const Block = require('../models/Block');
 const Report = require('../models/Report');
 const { uploadPhotoFromMeta } = require('../services/cloudinary');
+const { getAssignedBlockIds, matchBlockFromCaption } = require('../utils/helpers');
 const { 
   sendHindiReply, 
   buildConfirmationMessage,
   buildUnauthorizedMessage,
-  buildPhotoRequiredMessage
+  buildPhotoRequiredMessage,
+  buildBlockChoiceMessage
 } = require('../services/whatsapp');
 
 // GET /webhook — Meta verification handshake
@@ -78,10 +80,28 @@ router.post('/', async (req, res) => {
       year: 'numeric'
     });
 
-    // Find worker's assigned block
+    // Find the block(s) this worker is responsible for.
+    // Sorted by name: this is the order of the numbered list we send to the worker.
+    const blockIds = getAssignedBlockIds(worker);
+    const assignedBlocks = blockIds.length
+      ? await Block.find({ _id: { $in: blockIds } }).sort({ name: 1 })
+      : [];
+
     let block = null;
-    if (worker.assignedBlock) {
-      block = await Block.findById(worker.assignedBlock);
+    if (assignedBlocks.length === 1) {
+      // One block: nothing to ask, same as before
+      block = assignedBlocks[0];
+    } else if (assignedBlocks.length > 1) {
+      // Several blocks: the worker says which one in the photo caption
+      block = matchBlockFromCaption(caption, assignedBlocks);
+      if (!block) {
+        console.log(`❓ ${worker.name} has ${assignedBlocks.length} blocks, caption "${caption}" matched none — asking`);
+        await sendHindiReply(
+          senderPhone,
+          buildBlockChoiceMessage(worker.nameHindi || worker.name, assignedBlocks)
+        );
+        return res.sendStatus(200);
+      }
     }
 
     const blockName = block?.name || 'Unknown Block';

@@ -1,16 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const Report = require('../models/Report');
+const { buildReportFilter } = require('../utils/helpers');
 
-// GET /api/reports — Get all reports (paginated)
+// GET /api/reports — Get reports (paginated, searchable)
+// Query: ?search=&blockId=&from=YYYY-MM-DD&to=YYYY-MM-DD&page=&limit=
 router.get('/', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 100);
     const skip = (page - 1) * limit;
+    const filter = buildReportFilter(req.query);
 
-    const total = await Report.countDocuments();
-    const reports = await Report.find()
+    const total = await Report.countDocuments(filter);
+    const reports = await Report.find(filter)
       .sort({ timestamp: -1 })
       .skip(skip)
       .limit(limit);
