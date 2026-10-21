@@ -32,3 +32,4 @@ const workerSchema = new mongoose.Schema({
 workerSchema.index({ addedAt: -1 });
 
 module.exports = mongoose.model('Worker', workerSchema);
++
