@@ -1,3 +1,7 @@
+const {
+  checkDuplicateReport
+} = require('../services/duplicateReport');
+const workingHours = require('../middleware/workingHours');
 const express = require('express');
 const router = express.Router();
 const Worker = require('../models/Worker');
@@ -28,7 +32,7 @@ router.get('/', (req, res) => {
 });
 
 // POST /webhook — Incoming WhatsApp messages from Meta
-router.post('/', async (req, res) => {
+router.post('/', workingHours, async (req, res) => {
   try {
     const body = req.body;
 
@@ -97,11 +101,32 @@ router.post('/', async (req, res) => {
     const blockName = block?.name || 'Unknown Block';
     const blockNameHindi = block?.nameHindi || 'अज्ञात स्थान';
 
-    // Upload photo to Cloudinary
-    const { url: photoUrl, publicId } = await uploadPhotoFromMeta(mediaId, senderPhone);
+   // Check for duplicate report
+  const duplicateCheck = await checkDuplicateReport({
+    workerPhone: senderPhone,
+    blockId: block?._id || null,
+    caption
+  });
 
-    // Save report to MongoDB
-    const report = new Report({
+  if (duplicateCheck.isDuplicate) {
+    console.log(
+      `⚠️ Duplicate report detected from ${worker.name}`
+    );
+
+    await sendHindiReply(
+      senderPhone,
+      `⚠️ यह रिपोर्ट पहले ही दर्ज की जा चुकी है।\n\n` +
+      `यह एक duplicate report है।`
+    );
+
+    return res.sendStatus(200);
+  }
+
+  // Upload photo to Cloudinary
+  const { url: photoUrl, publicId } = await uploadPhotoFromMeta(mediaId, senderPhone);
+
+  // Save report to MongoDB
+  const report = new Report({
       workerPhone: senderPhone,
       workerName: worker.name,
       workerNameHindi: worker.nameHindi || worker.name,
