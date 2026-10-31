@@ -15,4 +15,4 @@ const blockSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Block', blockSchema);
+module.exports = mongoose.model('Block', blockSchema)
