@@ -30,9 +30,9 @@ router.get('/today', async (req, res) => {
   try {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
-    
-    const reports = await Report.find({ 
-      timestamp: { $gte: startOfDay } 
+
+    const reports = await Report.find({
+      timestamp: { $gte: startOfDay }
     }).sort({ timestamp: -1 });
 
     res.json({ success: true, reports, count: reports.length });
@@ -51,9 +51,9 @@ router.get('/stats', async (req, res) => {
     const totalCount = await Report.countDocuments();
     const latestReport = await Report.findOne().sort({ timestamp: -1 });
 
-    res.json({ 
-      success: true, 
-      todayCount, 
+    res.json({
+      success: true,
+      todayCount,
       totalCount,
       latestReport
     });
@@ -95,6 +95,7 @@ router.patch('/:id', async (req, res) => {
 
     block.lastCleaned = report.timestamp || new Date();
     block.lastCleanedBy = report.workerName;
+    block.lastCleanedByHindi = report.workerNameHindi || report.workerName;
     block.status = 'clean';
     await block.save();
 

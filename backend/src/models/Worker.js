@@ -1,21 +1,14 @@
 const mongoose = require('mongoose');
+const { formatPhone } = require('../utils/helpers');
 
 const normalizePhone = (phone) => {
   if (!phone) return phone;
-
-  let normalizedPhone = String(phone).replace(/\D/g, '');
-  if (normalizedPhone.startsWith('0')) {
-    normalizedPhone = `91${normalizedPhone.slice(1)}`;
-  }
-
-  return normalizedPhone.startsWith('91')
-    ? normalizedPhone
-    : `91${normalizedPhone}`;
+  return formatPhone(phone);
 };
 
 const workerSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  nameHindi: { type: String }, // Name in Hindi
+  name: { type: String, required: true, trim: true },
+  nameHindi: { type: String, trim: true }, // Name in Hindi
   phone: {
     type: String,
     required: true,
@@ -32,4 +25,3 @@ const workerSchema = new mongoose.Schema({
 workerSchema.index({ addedAt: -1 });
 
 module.exports = mongoose.model('Worker', workerSchema);
-+

@@ -10,6 +10,7 @@ const blockSchema = new mongoose.Schema(
     isActive: { type: Boolean, default: true },
     lastCleaned: { type: Date, default: null },
     lastCleanedBy: { type: String, default: null, trim: true },
+    lastCleanedByHindi: { type: String, default: null, trim: true },
     createdAt: { type: Date, default: Date.now },
     status: {
       type: String,
@@ -21,4 +22,4 @@ const blockSchema = new mongoose.Schema(
 
 blockSchema.index({ isActive: 1, name: 1 });
 
-module.exports = mongoose.model('Block', blockSchema)
+module.exports = mongoose.model('Block', blockSchema);

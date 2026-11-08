@@ -9,8 +9,8 @@ const Block = require('../models/Block');
 const Report = require('../models/Report');
 const { uploadPhotoFromMeta } = require('../services/cloudinary');
 const { getAssignedBlockIds, matchBlockFromCaption, pickNextBlock } = require('../utils/helpers');
-const { 
-  sendHindiReply, 
+const {
+  sendHindiReply,
   buildConfirmationMessage,
   buildUnauthorizedMessage,
   buildPhotoRequiredMessage
@@ -92,41 +92,43 @@ router.post('/', workingHours, async (req, res) => {
       : [];
 
     let block = null;
+    let captionIsBlockSelector = false; // "2" / "Girls Toilet" picks a block; it is not a description
     if (assignedBlocks.length === 1) {
       block = assignedBlocks[0];
     } else if (assignedBlocks.length > 1) {
-      block = matchBlockFromCaption(caption, assignedBlocks) || pickNextBlock(assignedBlocks, blockIds);
+      const fromCaption = matchBlockFromCaption(caption, assignedBlocks);
+      captionIsBlockSelector = Boolean(fromCaption);
+      block = fromCaption || pickNextBlock(assignedBlocks, blockIds);
     }
 
     const blockName = block?.name || 'Unknown Block';
     const blockNameHindi = block?.nameHindi || 'अज्ञात स्थान';
 
-   // Check for duplicate report
-  const duplicateCheck = await checkDuplicateReport({
-    workerPhone: senderPhone,
-    blockId: block?._id || null,
-    caption
-  });
+    // Check for duplicate report
+    const duplicateCheck = await checkDuplicateReport({
+      workerPhone: senderPhone,
+      blockId: block?._id || null,
+      // A block-number caption is shared by every photo of that block, so it can't identify a duplicate
+      caption: captionIsBlockSelector ? '' : caption
+    });
 
-  if (duplicateCheck.isDuplicate) {
-    console.log(
-      `⚠️ Duplicate report detected from ${worker.name}`
-    );
+    if (duplicateCheck.isDuplicate) {
+      console.log(`⚠️ Duplicate report detected from ${worker.name}`);
 
-    await sendHindiReply(
-      senderPhone,
-      `⚠️ यह रिपोर्ट पहले ही दर्ज की जा चुकी है।\n\n` +
-      `यह एक duplicate report है।`
-    );
+      await sendHindiReply(
+        senderPhone,
+        `⚠️ यह रिपोर्ट पहले ही दर्ज की जा चुकी है।\n\n` +
+        `यह एक डुप्लीकेट रिपोर्ट है।`
+      );
 
-    return res.sendStatus(200);
-  }
+      return res.sendStatus(200);
+    }
 
-  // Upload photo to Cloudinary
-  const { url: photoUrl, publicId } = await uploadPhotoFromMeta(mediaId, senderPhone);
+    // Upload photo to Cloudinary
+    const { url: photoUrl, publicId } = await uploadPhotoFromMeta(mediaId, senderPhone);
 
-  // Save report to MongoDB
-  const report = new Report({
+    // Save report to MongoDB
+    const report = new Report({
       workerPhone: senderPhone,
       workerName: worker.name,
       workerNameHindi: worker.nameHindi || worker.name,
@@ -144,6 +146,7 @@ router.post('/', workingHours, async (req, res) => {
     if (block) {
       block.lastCleaned = now;
       block.lastCleanedBy = worker.name;
+      block.lastCleanedByHindi = worker.nameHindi || worker.name;
       block.status = 'clean';
       await block.save();
     }
