@@ -1,6 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const Block = require('../models/Block');
+const Report = require('../models/Report');
+const { isObjectId } = require('../utils/helpers');
+const { completeNames } = require('../services/translate');
+
+// Reports keep a copy of the block's name (so history survives a deleted block).
+// When a block is renamed, bring those copies up to date.
+const propagateBlockNames = (block) =>
+  Report.updateMany(
+    { blockId: block._id },
+    { $set: { blockName: block.name, blockNameHindi: block.nameHindi } }
+  );
 
 // GET /api/blocks — Get all blocks with status
 router.get('/', async (req, res) => {
@@ -13,21 +24,57 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/blocks — Add new block
+// The admin only has to type ONE name (English or Hindi); the other is filled in.
 router.post('/', async (req, res) => {
   try {
     const { name, nameHindi, location } = req.body;
-    const block = new Block({ name, nameHindi, location });
+    const names = await completeNames('block', { name, nameHindi });
+    if (!names.name) {
+      return res.status(400).json({ success: false, error: 'Block name is required' });
+    }
+    const block = new Block({
+      name: names.name,
+      nameHindi: names.nameHindi,
+      location: typeof location === 'string' ? location.trim() : undefined
+    });
     await block.save();
-    res.json({ success: true, block });
+    res.json({ success: true, block, translation: { generated: names.generated, ok: names.ok } });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// PATCH /api/blocks/:id — Update block
+// PATCH /api/blocks/:id — Edit a block (names / location). Only these fields are accepted;
+// status and last-cleaned are managed by the WhatsApp reports, not by the admin form.
 router.patch('/:id', async (req, res) => {
   try {
-    const block = await Block.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!isObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, error: 'Invalid block id' });
+    }
+    const { name, nameHindi, location } = req.body;
+    const block = await Block.findById(req.params.id);
+    if (!block) {
+      return res.status(404).json({ success: false, error: 'Block not found' });
+    }
+
+    if (name !== undefined || nameHindi !== undefined) {
+      // A changed name without its pair means "regenerate the other language".
+      const names = await completeNames('block', {
+        name: name !== undefined ? name : nameHindi !== undefined ? '' : block.name,
+        nameHindi: nameHindi !== undefined ? nameHindi : name !== undefined ? '' : block.nameHindi
+      });
+      if (!names.name) {
+        return res.status(400).json({ success: false, error: 'Block name is required' });
+      }
+      block.name = names.name;
+      block.nameHindi = names.nameHindi;
+    }
+    if (location !== undefined) {
+      block.location = typeof location === 'string' ? location.trim() : '';
+    }
+
+    await block.save();
+    await propagateBlockNames(block);
     res.json({ success: true, block });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

@@ -7,6 +7,7 @@ const webhookRoute = require('./routes/webhook');
 const workersRoute = require('./routes/workers');
 const blocksRoute = require('./routes/blocks');
 const reportsRoute = require('./routes/reports');
+const translateRoute = require('./routes/translate');
 
 const app = express();
 
@@ -19,6 +20,10 @@ app.use('/webhook', webhookRoute);
 app.use('/api/workers', workersRoute);
 app.use('/api/blocks', blocksRoute);
 app.use('/api/reports', reportsRoute);
+app.use('/api/translate', translateRoute);
+
+// Lightweight status ping used by the dashboard's connection indicator
+app.get('/api/health', (req, res) => res.json({ ok: true, time: Date.now() }));
 
 // Health check
 app.get('/', (req, res) => {
