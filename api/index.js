@@ -6,6 +6,7 @@ const webhookRoute = require('../backend/src/routes/webhook');
 const workersRoute = require('../backend/src/routes/workers');
 const blocksRoute = require('../backend/src/routes/blocks');
 const reportsRoute = require('../backend/src/routes/reports');
+const translateRoute = require('../backend/src/routes/translate');
 
 const app = express();
 
@@ -36,9 +37,10 @@ app.use('/webhook', webhookRoute);
 app.use('/api/workers', workersRoute);
 app.use('/api/blocks', blocksRoute);
 app.use('/api/reports', reportsRoute);
+app.use('/api/translate', translateRoute);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'HITS Vercel API is live! 🚀', time: new Date().toISOString() });
+  res.json({ ok: true, status: 'HITS Vercel API is live! 🚀', time: new Date().toISOString() });
 });
 
 module.exports = app;
