@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Clock, MessageSquare, ImageOff } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -34,7 +35,7 @@ export default function PhotoModal({ report, onClose }) {
     ? (report.blockNameHindi || report.blockName)
     : (report.blockName || report.blockNameHindi);
 
-  return (
+  return createPortal(
     <div
       className="modal-overlay"
       role="dialog"
@@ -95,6 +96,7 @@ export default function PhotoModal({ report, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

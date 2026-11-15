@@ -756,7 +756,7 @@ button:active,
 
 @keyframes ashish-page-in {
   from { opacity: 0; transform: translateY(9px); }
-  to { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes ashish-card-in {
