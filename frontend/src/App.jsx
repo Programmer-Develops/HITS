@@ -97,7 +97,8 @@ function AppShell() {
             aria-label={theme === 'dark' ? t.lightMode : t.darkMode}
             title={theme === 'dark' ? t.lightMode : t.darkMode}
           >
-            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+            {/* Ashish: current-theme icon treatment. */}
+            {theme === 'dark' ? <Moon size={17} /> : <Sun size={17} />}
           </button>
         </div>
       </header>
@@ -158,7 +159,8 @@ function AppShell() {
           </button>
 
           <button type="button" className="sidebar-control-btn" onClick={toggleTheme}>
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            {/* Ashish current-theme icon treatment. */}
+            {theme === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
             <span>{theme === 'dark' ? t.lightMode : t.darkMode}</span>
           </button>
         </div>
