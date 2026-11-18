@@ -14,7 +14,7 @@ The platform enables workers and administrators to monitor sanitation conditions
 - 🏢 Sanitation Block Management
 - 📸 Photo-Based Hygiene Issue Reporting
 - 🔍 Duplicate Report Detection
-- 🌐 Bilingual Support (English & Telugu)
+- 🌐 Bilingual Support (English & Hindi)
 - 💬 WhatsApp Webhook Integration
 - 📊 Dashboard for Report Status Tracking
 - ☁️ Cloudinary Image Storage
